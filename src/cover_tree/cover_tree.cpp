@@ -1022,30 +1022,48 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
     std::stack<CoverTree::Node*> travel;
     CoverTree::Node* curNode;
 
+    std::vector<CoverTree::Node*> allNodes;
+
     // Initialize with root
     travel.push(ct.root);
 
-    // Qualitatively keep track of number of prints
-    int numPrints = 0;
+    os << "{" << std::endl;
+    os << "\"type\" : \"CoverTree\"" << std::endl;
+
     // Pop, print and then push the children
     while (!travel.empty())
     {
-        if (numPrints > 5000)
-            throw std::runtime_error("Printing stopped prematurely, something wrong!");
-        numPrints++;
-
         // Pop
         curNode = travel.top();
         travel.pop();
 
+        allNodes.push_back(curNode);
+
+        os << ", \"parent_child\" : [" << std::endl;
+
         // Print the current -> children pair
-        for (const auto& child : *curNode)
-            os << *curNode << " -> " << *child << std::endl;
+        for (const auto& child : *curNode) {
+            unsigned parent_id = curNode->ID;
+            unsigned child_id = child->ID;
+            // os << "(" << *curNode << "," << *child << ")" << std::endl;
+            os << "(" << parent_id << "," << child_id << ")" << std::endl;
+        }
+
+        os << "]" << std::endl;
 
         // Now push the children
         for (int i = curNode->children.size() - 1; i >= 0; --i)
             travel.push(curNode->children[i]);
     }
+
+
+    os << ", \"nodes\" : [" << std::endl;
+    for (const auto& node : allNodes) {
+        os << "{\"id\" : " << node->ID << ", \"level\" : " << node->level << ", \"point\" : " << node->_p << "}" << std::endl;
+    }
+    os << "]" << std::endl;
+
+    os << "}" << std::endl;
 
     return os;
 }
