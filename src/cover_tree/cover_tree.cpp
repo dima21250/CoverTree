@@ -1023,6 +1023,11 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
     CoverTree::Node* curNode;
 
     std::vector<CoverTree::Node*> allNodes;
+    
+    typedef std::pair<unsigned,unsigned> id_pair;
+
+    std::vector<id_pair> links;
+
 
     // Initialize with root
     travel.push(ct.root);
@@ -1039,30 +1044,53 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
 
         allNodes.push_back(curNode);
 
-        os << ", \"parent_child\" : [" << std::endl;
 
         // Print the current -> children pair
         for (const auto& child : *curNode) {
             unsigned parent_id = curNode->ID;
             unsigned child_id = child->ID;
             // os << "(" << *curNode << "," << *child << ")" << std::endl;
-            os << "(" << parent_id << "," << child_id << ")" << std::endl;
+            // os << "(" << parent_id << "," << child_id << ")" << std::endl;
+            links.push_back(id_pair(parent_id, child_id));
         }
-
-        os << "]" << std::endl;
 
         // Now push the children
         for (int i = curNode->children.size() - 1; i >= 0; --i)
             travel.push(curNode->children[i]);
     }
 
-
+    // Output nodes
     os << ", \"nodes\" : [" << std::endl;
-    for (const auto& node : allNodes) {
-        os << "{\"id\" : " << node->ID << ", \"level\" : " << node->level << ", \"point\" : " << node->_p << "}" << std::endl;
+
+    for (size_t i = 0; i < allNodes.size(); ++i) {
+        if (i != 0 ) {
+            os << ", ";
+        }
+
+        const auto node = allNodes[i];
+        pointType point = node->_p;
+        os << "{\"id\" : " << node->ID << ", \"level\" : " << node->level << ", \"point\" : [" << point[0];
+        for (int i = 1; i < point.rows(); ++i) {
+            os << ", " << point[i];
+        }
+
+        os << "]}" << std::endl;
     }
+
     os << "]" << std::endl;
 
+    // Output links
+    os << ", \"links\" : [" << std::endl;
+
+    for (size_t i = 0; i < links.size(); ++i) {
+        if (i != 0) {
+            os << ", ";
+        }
+        const auto ln = links[i];
+        os << "[" << ln.first << "," << ln.second << "]";
+    }
+
+    os << "]" << std::endl;
     os << "}" << std::endl;
 
     return os;
