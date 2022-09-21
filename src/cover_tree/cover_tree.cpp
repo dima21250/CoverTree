@@ -18,6 +18,7 @@
 #include "utils.h"
 
 #include <numeric>
+#include <tuple>
 
 double* CoverTree::compute_pow_table()
 {
@@ -1024,10 +1025,11 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
 
     std::vector<CoverTree::Node*> allNodes;
     
-    typedef std::pair<unsigned,unsigned> id_pair;
+    //typedef std::pair<unsigned,unsigned> id_pair;
+    typedef std::tuple<unsigned,unsigned,double> link_tuple;
 
-    std::vector<id_pair> links;
-
+    //std::vector<id_pair> links;
+    std::vector<link_tuple> links;
 
     // Initialize with root
     travel.push(ct.root);
@@ -1049,9 +1051,9 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
         for (const auto& child : *curNode) {
             unsigned parent_id = curNode->ID;
             unsigned child_id = child->ID;
-            // os << "(" << *curNode << "," << *child << ")" << std::endl;
-            // os << "(" << parent_id << "," << child_id << ")" << std::endl;
-            links.push_back(id_pair(parent_id, child_id));
+            double dist = curNode->dist(child);
+            auto t = std::make_tuple(parent_id, child_id, dist);
+            links.push_back(t);
         }
 
         // Now push the children
@@ -1062,14 +1064,19 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
     // Output nodes
     os << ", \"nodes\" : [" << std::endl;
 
-    for (size_t i = 0; i < allNodes.size(); ++i) {
+    for (size_t i = 2; i < allNodes.size(); ++i) {
         if (i != 0 ) {
             os << ", ";
         }
 
         const auto node = allNodes[i];
         pointType point = node->_p;
-        os << "{\"id\" : " << node->ID << ", \"level\" : " << node->level << ", \"point\" : [" << point[0];
+        os << "{\"id\" : " << node->ID
+           << ", \"level\" : " << node->level
+           << ", \"covdist\" : " << node->covdist()
+           << ", \"sepdist\" : " << node->sepdist()
+           << ", \"point\" : [" << point[0];
+
         for (int i = 1; i < point.rows(); ++i) {
             os << ", " << point[i];
         }
@@ -1087,7 +1094,11 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
             os << ", ";
         }
         const auto ln = links[i];
-        os << "[" << ln.first << "," << ln.second << "]";
+        os << "{"
+           << "\"parent\" : " << std::get<0>(ln) << ", "
+           << "\"child\" : " << std::get<1>(ln) << ", "
+           << "\"distance\" : " << std::get<2>(ln) 
+           << "}\n";
     }
 
     os << "]" << std::endl;
