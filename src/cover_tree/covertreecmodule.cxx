@@ -25,7 +25,8 @@
 #include <thread>
 
 #include <iostream>
-# include <iomanip>
+#include <iomanip>
+#include <sstream>
 
 #ifdef _FLOAT64_VER_
 #define MY_NPY_FLOAT NPY_FLOAT64
@@ -305,6 +306,27 @@ static PyObject *covertreec_display(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
+
+static PyObject *covertreec_dumps(PyObject *self, PyObject *args) {
+
+  CoverTree *obj;
+  size_t int_ptr;
+  static std::stringstream os;
+
+  /*  parse the input, from python int to c++ int */
+  if (!PyArg_ParseTuple(args, "k:covertreec_dumps", &int_ptr))
+    return NULL;
+  
+  os.str("");
+  obj = reinterpret_cast< CoverTree * >(int_ptr);
+  os << *obj;
+
+  auto result = reinterpret_cast<size_t>(os.str().c_str());
+
+  return PyLong_FromSsize_t(result);
+}
+
+
 static PyObject *covertreec_test_covering(PyObject *self, PyObject *args) {
 
   CoverTree *obj;
@@ -332,6 +354,7 @@ PyMODINIT_FUNC PyInit_covertreec(void)
     {"NearestNeighbour", covertreec_nn, METH_VARARGS, "Find the nearest neighbour."},
     {"kNearestNeighbours", covertreec_knn, METH_VARARGS, "Find the k nearest neighbours."},
     {"display", covertreec_display, METH_VARARGS, "Display the Cover Tree."},
+    {"dumps", covertreec_dumps, METH_VARARGS, "Dump the Cover Tree into a Python string."},
     {"test_covering", covertreec_test_covering, METH_VARARGS, "Check if covering property is satisfied."},
     {NULL, NULL, 0, NULL}
   };

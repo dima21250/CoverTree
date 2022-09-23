@@ -28,6 +28,9 @@ class CoverTree(object):
     def display(self):
         return covertreec.display(self.this)
 
+    def dumps(self):
+        return covertreec.dumps(self.this)
+
     def test_covering(self):
         return covertreec.test_covering(self.this)
 
