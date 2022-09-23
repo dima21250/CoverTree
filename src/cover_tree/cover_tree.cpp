@@ -1064,7 +1064,7 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
     // Output nodes
     os << ", \"nodes\" : [" << std::endl;
 
-    for (size_t i = 2; i < allNodes.size(); ++i) {
+    for (size_t i = 0; i < allNodes.size(); ++i) {
         if (i != 0 ) {
             os << ", ";
         }

@@ -311,19 +311,19 @@ static PyObject *covertreec_dumps(PyObject *self, PyObject *args) {
 
   CoverTree *obj;
   size_t int_ptr;
-  static std::stringstream os;
+  std::stringstream os;
 
   /*  parse the input, from python int to c++ int */
   if (!PyArg_ParseTuple(args, "k:covertreec_dumps", &int_ptr))
     return NULL;
   
-  os.str("");
   obj = reinterpret_cast< CoverTree * >(int_ptr);
   os << *obj;
 
-  auto result = reinterpret_cast<size_t>(os.str().c_str());
+  static const std::string tmp = os.str();
+  const char *s = tmp.c_str();
 
-  return PyLong_FromSsize_t(result);
+  return Py_BuildValue("s", s);
 }
 
 
