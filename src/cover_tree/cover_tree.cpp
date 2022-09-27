@@ -698,6 +698,7 @@ CoverTree::CoverTree(const pointType& p, int truncate /*=-1*/)
     , D(p.rows())
 {
     root = new CoverTree::Node;
+    root->ID = 0;
     root->_p = p;
     root->level = 0;
     root->maxdistUB = 0;
@@ -733,6 +734,7 @@ CoverTree::CoverTree(std::vector<pointType>& pList, int begin, int end, int trun
     D = temp.rows();
 
     root = new CoverTree::Node;
+    root->ID = 0;
     root->_p = temp;
     root->level = scale_val; //-1000;
     root->maxdistUB = powdict[scale_val+1024];
@@ -786,6 +788,7 @@ CoverTree::CoverTree(Eigen::MatrixXd& pMatrix, int begin, int end, int truncateA
     D = temp.rows();
 
     root = new CoverTree::Node;
+    root->ID = 0;
     root->_p = temp;
     root->level = scale_val; //-1000;
     root->maxdistUB = powdict[scale_val+1024];
@@ -839,6 +842,7 @@ CoverTree::CoverTree(Eigen::Map<Eigen::MatrixXd>& pMatrix, int begin, int end, i
     D = temp.rows();
 
     root = new CoverTree::Node;
+    root->ID = 0;
     root->_p = temp;
     root->level = scale_val; //-1000;
     root->maxdistUB = powdict[scale_val+1024];
