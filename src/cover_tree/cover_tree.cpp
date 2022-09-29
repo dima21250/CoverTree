@@ -1079,6 +1079,7 @@ std::ostream& operator<<(std::ostream& os, const CoverTree& ct)
            << ", \"level\" : " << node->level
            << ", \"covdist\" : " << node->covdist()
            << ", \"sepdist\" : " << node->sepdist()
+           << ", \"rootdist\" : " << node->dist(ct.root)
            << ", \"point\" : [" << point[0];
 
         for (int i = 1; i < point.rows(); ++i) {
