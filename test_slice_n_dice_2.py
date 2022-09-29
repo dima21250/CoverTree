@@ -33,8 +33,8 @@ except Exception as e:
     sys.exit(-1)
 
 df = pd.read_csv(in_file)
-df_t = df.iloc[:,3:].transpose() # d in m space
-#df_t = df.iloc[:,3:] # m in d space
+#df_t = df.iloc[:,3:].transpose() # d in m space
+df_t = df.iloc[:,3:] # m in d space
 embeddings = df_t.to_numpy()
 
 
@@ -42,8 +42,8 @@ embeddings = df_t.to_numpy()
 emb = np.float64(embeddings)
 ct = CoverTree.from_matrix(emb)
 
-# Faiss wants float32
-embeddings = np.float32(embeddings)
+# Faiss wants float32 and c-contiguous arrays
+embeddings = np.float32(embeddings.copy(order="C"))
 d = embeddings.shape[1]
 
 #gpu_id = torch.cuda.current_device()
