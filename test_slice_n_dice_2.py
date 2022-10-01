@@ -33,14 +33,17 @@ except Exception as e:
     sys.exit(-1)
 
 df = pd.read_csv(in_file)
-#df_t = df.iloc[:,3:].transpose() # d in m space
-df_t = df.iloc[:,3:] # m in d space
+df_t = df.iloc[:,3:].transpose() # d in m space
+#df_t = df.iloc[:,3:] # m in d space
 embeddings = df_t.to_numpy()
 
 
 # CoverTree will core dump if array contains float32
 emb = np.float64(embeddings)
 ct = CoverTree.from_matrix(emb)
+
+# Map back to indexes in original emb array
+e2i = {tuple(a):i for i,a in enumerate([e for e in emb])}
 
 # Faiss wants float32 and c-contiguous arrays
 embeddings = np.float32(embeddings.copy(order="C"))
@@ -98,9 +101,28 @@ root_dist_sorted = sorted(root_dist, key=lambda n:n[2], reverse=True)
 # map node id to index point query
 id2q = {id: np.reshape(np.float32(p), (1,d)) for (id,p) in node_points.items()}
 
-# map map node ID to original dataframe row
-id2row = {id : int(index.search(id2q[id], 1)[1]) for id in node_points.keys()}
+# map map node ID to original dataframe rows
+def id2rows(id, k=5, t=1):
+    if not id in id2q:
+        return set()
+    else:
+        D,I = index.search(id2q[id], k)
+        n = I.tolist()[0]
+        d = D.tolist()[0]
+        rows = []
+        for i in range(len(d)):
+            if d[i] < t:
+                rows.append(n[i])
+        return set(rows)
 
 # map original dataframe row to item name
 row2name = {item[0]:item[1] for item in enumerate(list(df_t.transpose().columns))}
+
+def id2names(id,k):
+    return {row2name[r] for r in id2rows(id,k)} 
+
+def dump_id_names(k=5, t=1):
+    for id in id2q.keys():
+        for r in id2rows(id,k,t):
+            print(id,row2name[r])
 
