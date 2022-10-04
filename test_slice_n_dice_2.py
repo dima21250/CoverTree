@@ -33,8 +33,9 @@ except Exception as e:
     sys.exit(-1)
 
 df = pd.read_csv(in_file)
-df_t = df.iloc[:,3:].transpose() # d in m space
+#df_t = df.iloc[:,3:].transpose() # d in m space
 #df_t = df.iloc[:,3:] # m in d space
+df_t = df.iloc[:,2:] # d in X
 embeddings = df_t.to_numpy()
 
 
@@ -98,6 +99,9 @@ root_dist_mean = mean([n[2] for n in root_dist])
 root_dist_median = median([n[2] for n in root_dist])
 root_dist_sorted = sorted(root_dist, key=lambda n:n[2], reverse=True)
 
+def k_outliers(k):
+    return {n for (n,_,_) in root_dist_sorted[0:k]}
+
 # map node id to index point query
 id2q = {id: np.reshape(np.float32(p), (1,d)) for (id,p) in node_points.items()}
 
@@ -125,4 +129,43 @@ def dump_id_names(k=5, t=1):
     for id in id2q.keys():
         for r in id2rows(id,k,t):
             print(id,row2name[r])
+
+def parent_child_graph(fname):
+    head = """
+digraph {
+        layout=twopi
+        overlap=prism
+        overlap_scaling=35
+    """
+
+    with open(fname, "w") as fout:
+        top_50 = k_outliers(50)
+        top_25 = k_outliers(25)
+        next_25 = top_50 - top_25
+
+        print(head, file=fout)
+        print("\t{} [style=filled, fillcolor=\"blue\"]".format(0), file=fout)
+
+        for outlier in top_25:
+            print("\t{} [style=filled, fillcolor=\"red\"]".format(outlier), file=fout)
+
+        for outlier in next_25:
+            print("\t{} [style=filled, fillcolor=\"purple\"]".format(outlier), file=fout)
+
+        for (p,c) in children:
+            print("\t{} -> {}".format(p,c), file=fout)
+
+        print("}", file=fout)
+
+def parent_child_graph_2():
+    head = """
+digraph {
+        layout=twopi
+        overlap=prism
+        overlap_scaling=35
+    """
+    print(head)
+    for (p,c) in children:
+        print("\t{} -> {}".format(p,c))
+    print("}")
 
