@@ -10,6 +10,13 @@ from covertree import CoverTree
 import numpy as np
 from collections import defaultdict
 from statistics import mean, median, quantiles
+import hashlib
+
+
+def hash_vec(v, places=3):
+    fmt = "{{:+.{}E}}".format(places)
+    vec_string = "".join([fmt.format(x) for x in v]).encode("utf-8")
+    return hashlib.sha256(vec_string).hexdigest()
 
 args = sys.argv
 largs = len(args)
