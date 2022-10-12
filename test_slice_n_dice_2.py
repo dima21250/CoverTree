@@ -18,6 +18,18 @@ def hash_vec(v, places=3):
     vec_string = "".join([fmt.format(x) for x in v]).encode("utf-8")
     return hashlib.sha256(vec_string).hexdigest()
 
+def enum_hash_vecs(arr, places=3):
+    hashed_vecs = [hash_vec(v, places=3) for v in arr]
+    enumd_hashes = list(enumerate(hashed_vecs))
+    return dict(enumd_hashes)
+
+# map map node ID to original dataframe rows
+def map_hashed_vecs_to_enum(enumd_hashed_vecs):
+    hashed_vecs_to_enum = defaultdict(set)
+    for i,hv in enumd_hashed_vecs.items():
+        hashed_vecs_to_enum[hv].add(i)
+    return hashed_vecs_to_enum
+
 args = sys.argv
 largs = len(args)
 if largs != 2:
