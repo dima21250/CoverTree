@@ -12,23 +12,40 @@ from collections import defaultdict
 from statistics import mean, median, quantiles
 import hashlib
 
-
-def hash_vec(v, places=3):
+def hash_vec(v, places=1):
     fmt = "{{:+.{}E}}".format(places)
-    vec_string = "".join([fmt.format(x) for x in v]).encode("utf-8")
+    vec = np.array(v).astype('float64')
+    vec = np.round(vec, decimals=places)
+    vec_string = "".join([fmt.format(float(x)) for x in vec]).encode("utf-8")
     return hashlib.sha256(vec_string).hexdigest()
 
-def enum_hash_vecs(arr, places=3):
-    hashed_vecs = [hash_vec(v, places=3) for v in arr]
+def enum_hash_vecs(arr, places=1):
+    hashed_vecs = [hash_vec(v, places=places) for v in arr]
     enumd_hashes = list(enumerate(hashed_vecs))
     return dict(enumd_hashes)
 
-# map map node ID to original dataframe rows
-def map_hashed_vecs_to_enum(enumd_hashed_vecs):
+def map_hashed_vecs_to_enums(enumd_hashed_vecs):
     hashed_vecs_to_enum = defaultdict(set)
     for i,hv in enumd_hashed_vecs.items():
         hashed_vecs_to_enum[hv].add(i)
     return hashed_vecs_to_enum
+
+def gen_test_data(N=100):
+    '''Generate an N by N square array for test data to sanity check cover tree implementation.'''
+    row = [float(i) for i in range(N)]
+    arr = np.array(row).reshape(1,N)
+    for i in range(1,N):
+        row.append(row.pop(0))
+        r = np.array(row).reshape(1,N)
+        arr = np.append(arr, r, axis=0)
+    return arr
+
+def gen_test_data_dup(N=100, duplication=3):
+    '''Generate an duplication*N by N array to sanity check cover tree implemenation.'''
+    arr = gen_test_data(N)
+    for i in range(1,duplication):
+        arr = np.append(arr, gen_test_data(N), axis=0)
+    return arr
 
 args = sys.argv
 largs = len(args)
@@ -55,12 +72,23 @@ df = pd.read_csv(in_file)
 #df_t = df.iloc[:,3:].transpose() # d in m space
 #df_t = df.iloc[:,3:] # m in d space
 df_t = df.iloc[:,2:] # d in X
-embeddings = df_t.to_numpy()
+embeddings = df_t.to_numpy().copy() # copy seems necessary to prevent issues with pandas dataframe
+#embeddings = gen_test_data()
+#embeddings = gen_test_data_dup()
 
+# Set up the mappings between row numbers and hashed vectors and do a sanity check
+e2hv = enum_hash_vecs(embeddings)
+hv2e = map_hashed_vecs_to_enums(e2hv)
+for i in range(len(embeddings)):
+    assert(i in hv2e[e2hv[i]])
 
 # CoverTree will core dump if array contains float32
 emb = np.float64(embeddings)
 ct = CoverTree.from_matrix(emb)
+
+# Making sure that the rows in emb and embeddings hash to the same values
+for left, right in zip(enum_hash_vecs(emb).values(), enum_hash_vecs(embeddings).values()):
+    assert(left == right)
 
 # Map back to indexes in original emb array
 e2i = {tuple(a):i for i,a in enumerate([e for e in emb])}
@@ -95,6 +123,12 @@ node_data = [{"id":n["id"],
                "rootdist":n["rootdist"]} for n in ct_data["nodes"]]
 
 node_points = {n["id"]:n["point"] for n in ct_data["nodes"]}
+
+n2hv = {id:hash_vec(v) for (id,v) in node_points.items()} 
+assert(set(n2hv.values()) == set(e2hv.values()))
+
+def node2enums(id, np=node_points, hv2e=hv2e):
+    return hv2e[hash_vec(np[id])]
 
 # Tree level given node
 node_level = {n["id"]:n["level"] for n in node_data}
@@ -187,4 +221,5 @@ digraph {
     for (p,c) in children:
         print("\t{} -> {}".format(p,c))
     print("}")
+
 
