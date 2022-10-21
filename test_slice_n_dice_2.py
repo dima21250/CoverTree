@@ -69,9 +69,9 @@ except Exception as e:
     sys.exit(-1)
 
 df = pd.read_csv(in_file)
-#df_t = df.iloc[:,3:].transpose() # d in m space
+df_t = df.iloc[:,3:].transpose() # d in m space
 #df_t = df.iloc[:,3:] # m in d space
-df_t = df.iloc[:,2:] # d in X
+#df_t = df.iloc[:,2:] # d in X
 embeddings = df_t.to_numpy().copy() # copy seems necessary to prevent issues with pandas dataframe
 #embeddings = gen_test_data()
 #embeddings = gen_test_data_dup()
@@ -191,18 +191,20 @@ digraph {
         overlap_scaling=35
     """
 
+    A = 3
+
     with open(fname, "w") as fout:
-        top_50 = k_outliers(50)
-        top_25 = k_outliers(25)
-        next_25 = top_50 - top_25
+        top_B = k_outliers(2*A)
+        top_A = k_outliers(A)
+        next_A = top_B - top_A
 
         print(head, file=fout)
         print("\t{} [style=filled, fillcolor=\"blue\"]".format(0), file=fout)
 
-        for outlier in top_25:
+        for outlier in top_A:
             print("\t{} [style=filled, fillcolor=\"red\"]".format(outlier), file=fout)
 
-        for outlier in next_25:
+        for outlier in next_A:
             print("\t{} [style=filled, fillcolor=\"purple\"]".format(outlier), file=fout)
 
         for (p,c) in children:
