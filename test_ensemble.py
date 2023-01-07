@@ -69,7 +69,7 @@ except Exception as e:
     sys.exit(-1)
 
 df = pd.read_csv(in_file)
-df_t = df.iloc[:,3:].transpose() # d in m space
+df_t = df.iloc[:,2:].transpose() # d in m space
 #df_t = df.iloc[:,3:] # m in d space
 #df_t = df.iloc[:,2:] # d in X
 embeddings = df_t.to_numpy().copy() # copy seems necessary to prevent issues with pandas dataframe
@@ -194,44 +194,53 @@ digraph {
     A = 3
 
     with open(fname, "w") as fout:
-        top_B = k_outliers(2*A)
-        top_A = k_outliers(A)
-        next_A = top_B - top_A
+        with open("legend_" + fname, "w") as fout_2:
+            top_B = k_outliers(2*A)
+            top_A = k_outliers(A)
+            next_A = top_B - top_A
 
-        print(head, file=fout)
-        print("\t{} [style=filled, fillcolor=\"blue\"]".format(0), file=fout)
+            print(head, file=fout)
 
-        for outlier in top_A:
-            print("\t{} [style=filled, fillcolor=\"red\"]".format(outlier), file=fout)
+            """
+            print("\t{} [style=filled, fillcolor=\"blue\"]".format(0), file=fout)
 
-        for outlier in next_A:
-            print("\t{} [style=filled, fillcolor=\"purple\"]".format(outlier), file=fout)
+            for outlier in top_A:
+                print("\t{} [style=filled, fillcolor=\"red\"]".format(outlier), file=fout)
 
-        for (p,c) in children:
-            print("\t{} -> {}".format(p,c), file=fout)
+            for outlier in next_A:
+                print("\t{} [style=filled, fillcolor=\"purple\"]".format(outlier), file=fout)
+            """
 
-        l_head = """
-        legend[shape=none label = 
-            <<table border="0" cellspacing="0" cellborder="1">
-        """
-        print(l_head, file=fout)
+            for (p,c) in children:
+                print("\t{} -> {}".format(p,c), file=fout)
 
-        l_fmt = """
-             <tr>
-             <td>{}</td>
-             <td>{}</td>
-             </tr>
-        """
+            print("}", file=fout)
 
-        for id in sorted(node_points.keys()):
-            print(l_fmt.format(id, id2names(id, 5)), file=fout)
+            ####
 
-        l_tail = """
-            </table>>]
-        """
-        print(l_tail, file=fout)
+            l_head = """
+            graph { 
+                legend[shape=none label = 
+                    <<table border="0" cellspacing="0" cellborder="1">
+            """
+            print(l_head, file=fout_2)
 
-        print("}", file=fout)
+            l_fmt = """
+                     <tr>
+                     <td>{}</td>
+                     <td>{}</td>
+                     </tr>
+            """
+
+            for id in sorted(node_points.keys()):
+                print(l_fmt.format(id, id2names(id, 5)), file=fout_2)
+
+            l_tail = """
+                    </table>>]
+            }
+            """
+            print(l_tail, file=fout_2)
+
 
 def parent_child_graph_2():
     head = """
@@ -244,5 +253,6 @@ digraph {
     for (p,c) in children:
         print("\t{} -> {}".format(p,c))
     print("}")
+
 
 

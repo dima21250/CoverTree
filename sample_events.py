@@ -126,8 +126,8 @@ node_data = [{"id":n["id"],
 
 node_points = {n["id"]:n["point"] for n in ct_data["nodes"]}
 
-n2hv = {id:hash_vec(v) for (id,v) in node_points.items()} 
-assert(set(n2hv.values()) == set(e2hv.values()))
+n2hv = {id:hash_vec(v) for (id,v) in node_points.items()}
+# assert(set(n2hv.values()) == set(e2hv.values()))
 
 def node2enums(id, np=node_points, hv2e=hv2e):
     return hv2e[hash_vec(np[id])]
@@ -144,7 +144,7 @@ for k,v in node_level.items():
 level_count = {k:len(v) for (k,v) in level_nodes.items()}
 
 # Number of children associated with each node
-children = [(ln["parent"], ln["child"]) for ln in ct_data["links"]] 
+children = [(ln["parent"], ln["child"]) for ln in ct_data["links"]]
 node_children = defaultdict(set)
 for p,c in children:
     node_children[p].add(c)
@@ -175,10 +175,10 @@ def id2rows(id, k=5, t=1):
         return set(rows)
 
 # map original dataframe row to item name
-row2name = {item[0]:item[1] for item in enumerate(list(df_t.transpose().columns))}
+row2name = {item[0]:item[1] for item in enumerate(list(df.transpose().columns))}
 
 def id2names(id,k):
-    return {row2name[r] for r in id2rows(id,k)} 
+    return {row2name[r] for r in id2rows(id,k)}
 
 def dump_id_names(k=5, t=1):
     for id in id2q.keys():
@@ -225,5 +225,3 @@ digraph {
     for (p,c) in children:
         print("\t{} -> {}".format(p,c))
     print("}")
-
-
