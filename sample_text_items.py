@@ -6,6 +6,7 @@ import faiss
 import torch
 import numpy as np
 import random
+import hashlib
 
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
@@ -47,7 +48,13 @@ except Exception as e:
     sys.exit(-1)
 
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-df = pd.read_csv(in_file)
+
+# Want to be able to specify a single random seed and have get_prototypes have a seed parameter.
+# That is I want to be able to resuse the random seed without quite reusing it.
+hashed_seed = hashlib.sha256(str(random_seed).encode()).hexdigest()
+random.seed(hashed_seed)
+
+df = pd.read_csv(in_file).sample(frac=1).reset_index(drop=True)
 text = df[text_field]
 embeddings = model.encode(text)
 faiss.normalize_L2(embeddings)
