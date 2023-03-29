@@ -55,7 +55,10 @@ hashed_seed = hashlib.sha256(str(random_seed).encode()).hexdigest()
 random.seed(hashed_seed)
 
 df = pd.read_csv(in_file).sample(frac=1).reset_index(drop=True)
+#df = df[df[text_field].notna()]
 text = df[text_field]
+text = text.fillna("")
+
 embeddings = model.encode(text)
 faiss.normalize_L2(embeddings)
 d = embeddings.shape[1]
