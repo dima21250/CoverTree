@@ -43,6 +43,11 @@ try:
     # Output CSV file
     out_file = Path(config["out_file"])
 
+    # JSON dump of cover tree
+    fdumps = None
+    if "ct_file" in config:
+        fdumps = config["ct_file"]
+
 except Exception as e:
     print("Configuration file error: {}".format(e), file=sys.stderr)
     sys.exit(-1)
@@ -92,6 +97,9 @@ index.add(embeddings)
 # Dump cover tree into JSON and create Python data structures
 ct_json = ct.dumps()
 ct_data = json.loads(ct_json)
+
+if fdumps:
+    print(ct_json, file=fdumps)
 
 node_data = [{"id":n["id"],
                "level":n["level"],
