@@ -88,7 +88,7 @@ if gpu_id:
     cfg.device = gpu_id
     flat_config = [cfg]
     resources = [faiss.StandardGpuResources()]
-    index = faiss.GpuIndexFlatIP(resources[0], d, flat_config[0])
+    index = faiss.GpuIndexFlatL2(resources[0], d, flat_config[0])
 else:
     index = faiss.IndexFlatL2(d)
 
@@ -99,7 +99,9 @@ ct_json = ct.dumps()
 ct_data = json.loads(ct_json)
 
 if fdumps:
-    print(ct_json, file=fdumps)
+    fres = Path(fdumps).expanduser().resolve()
+    with open(fres, "w") as fd:
+        print(ct_json, file=fd)
 
 node_data = [{"id":n["id"],
                "level":n["level"],
