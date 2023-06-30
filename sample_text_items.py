@@ -146,7 +146,7 @@ def id2rows(id, k=5, t=1):
         d = D.tolist()[0]
         rows = []
         for i in range(len(d)):
-            if d[i] < t:
+            if d[i] <= t:
                 rows.append(n[i])
         return set(rows)
 
@@ -163,7 +163,7 @@ def id2row(id, t=1):
         d = D.tolist()[0]
         row = None
         for i in range(len(d)):
-            if d[0] < t:
+            if d[0] <= t:
                 row = n[0]
         return row
 
@@ -174,7 +174,7 @@ def get_prototypes(seed):
         if remainder >= level_count[lv]:
             for n in level_nodes[lv]:
                 row_id = id2row(n)
-                if row_id:
+                if row_id != None:
                     row_ids.add(row_id)
                     remainder -= 1
                 else:
@@ -185,7 +185,7 @@ def get_prototypes(seed):
             node_sample = random.sample(list(level_nodes[lv]), remainder)
             for n in node_sample:
                 row_id = id2row(n)
-                if row_id:
+                if row_id != None:
                     row_ids.add(row_id)
                     remainder -= 1
                 else:
