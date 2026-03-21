@@ -34,3 +34,32 @@ class CoverTree(object):
     def test_covering(self):
         return covertreec.test_covering(self.this)
 
+    def get_level_stats(self):
+        """Get tree level statistics.
+
+        Returns:
+            dict with keys:
+                - min_level: minimum level in tree
+                - max_level: maximum level in tree
+                - num_points: total number of points
+                - level_counts: dict mapping level -> node count
+        """
+        return covertreec.get_level_stats(self.this)
+
+    def get_clusters_at_level(self, level):
+        """Get clusters at a specific tree level.
+
+        Args:
+            level: Tree level to extract clusters from
+
+        Returns:
+            list of dicts, each containing:
+                - node_id: unique node identifier
+                - level: tree level
+                - center: numpy array of cluster center point
+                - point_ids: list of point IDs in this cluster
+                - covering_distance: radius of cluster
+                - distance_to_parent: distance from this node to parent
+        """
+        return covertreec.get_clusters_at_level(self.this, level)
+

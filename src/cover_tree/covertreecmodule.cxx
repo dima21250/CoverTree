@@ -28,11 +28,8 @@
 #include <iomanip>
 #include <sstream>
 
-#ifdef _FLOAT64_VER_
+// Always use FLOAT64 since code uses 'double' everywhere
 #define MY_NPY_FLOAT NPY_FLOAT64
-#else
-#define MY_NPY_FLOAT NPY_FLOAT32
-#endif
 
 template<class UnaryFunction>
 UnaryFunction parallel_for_each(size_t first, size_t last, UnaryFunction f)
@@ -162,10 +159,8 @@ static PyObject *covertreec_insert(PyObject *self, PyObject *args) {
     return NULL;
 
   int d = PyArray_NDIM(in_array);
-  long *idx = new long[d];
-  for(int i=0; i<d; ++i)
-    idx[i] = 0;
-  double * fnp = reinterpret_cast< double * >( PyArray_GetPtr(in_array, idx) );
+  std::vector<npy_intp> idx(d, 0);  // RAII - no memory leak
+  double * fnp = reinterpret_cast< double * >( PyArray_GetPtr(in_array, idx.data()) );
   Eigen::Map<pointType> value(fnp, PyArray_SIZE(in_array));
 
   obj = reinterpret_cast< CoverTree * >(int_ptr);
@@ -185,10 +180,8 @@ static PyObject *covertreec_remove(PyObject *self, PyObject *args) {
     return NULL;
 
   int d = PyArray_NDIM(in_array);
-  long *idx = new long[d];
-  for(int i=0; i<d; ++i)
-    idx[i] = 0;
-  double * fnp = reinterpret_cast< double * >( PyArray_GetPtr(in_array, idx) );
+  std::vector<npy_intp> idx(d, 0);  // RAII - no memory leak
+  double * fnp = reinterpret_cast< double * >( PyArray_GetPtr(in_array, idx.data()) );
   Eigen::Map<pointType> value(fnp, PyArray_SIZE(in_array));
 
   obj = reinterpret_cast< CoverTree * >(int_ptr);
@@ -221,7 +214,16 @@ static PyObject *covertreec_nn(PyObject *self, PyObject *args) {
 
   //obj->dist_count.clear();
 
-  double *results = new double[numDims*numPoints];
+  // Let numpy allocate and own the memory - no memory leak
+  npy_intp dims[2] = {numPoints, numDims};
+  PyObject *out_array = PyArray_SimpleNew(2, dims, MY_NPY_FLOAT);
+  if (!out_array) {
+    PyErr_SetString(PyExc_MemoryError, "Failed to allocate output array");
+    return NULL;
+  }
+
+  double *results = static_cast<double*>(PyArray_DATA((PyArrayObject*)out_array));
+
   parallel_for_progressbar(0L, numPoints, [&](long i)->void{
     std::pair<CoverTree::Node*, double> ct_nn = obj->NearestNeighbour(queryPts.col(i));
     double *data = ct_nn.first->_p.data();
@@ -229,22 +231,7 @@ static PyObject *covertreec_nn(PyObject *self, PyObject *args) {
     for(long j=0; j<numDims; ++j)
       results[offset++] = data[j];
   });
-  //std::pair<CoverTree::Node*, double> cnn = obj->NearestNeighbour(value);
 
-  // unsigned tot_comp = 0;
-  // for(auto const& qc : obj->dist_count)
-  // {
-  //   std::cout << "Average number of distance computations at level: " << qc.first << " = " << 1.0 * (qc.second.load())/numPoints << std::endl;
-  //   tot_comp += qc.second.load();
-  // }
-  // std::cout << "Average number of distance computations: " << 1.0*tot_comp/numPoints << std::endl;
-  // std::cout << cnn.first->_p << std::endl;
-  //Py_RETURN_NONE;
-
-  long dims[2] = {numPoints, numDims};
-  PyObject *out_array = PyArray_SimpleNewFromData(2, dims, MY_NPY_FLOAT, results);
-
-  Py_INCREF(out_array);
   return out_array;
 }
 
@@ -267,7 +254,16 @@ static PyObject *covertreec_knn(PyObject *self, PyObject *args) {
 
   obj = reinterpret_cast< CoverTree * >(int_ptr);
 
-  double *results = new double[k*numDims*numPoints];
+  // Let numpy allocate and own the memory - no memory leak
+  npy_intp dims[3] = {numPoints, k, numDims};
+  PyObject *out_array = PyArray_SimpleNew(3, dims, MY_NPY_FLOAT);
+  if (!out_array) {
+    PyErr_SetString(PyExc_MemoryError, "Failed to allocate output array");
+    return NULL;
+  }
+
+  double *results = static_cast<double*>(PyArray_DATA((PyArrayObject*)out_array));
+
   parallel_for_progressbar(0L, numPoints, [&](long i)->void{
     std::vector<std::pair<CoverTree::Node*, double>> ct_nn = obj->kNearestNeighbours(queryPts.col(i), k);
     long offset = k*numDims*i;
@@ -278,15 +274,7 @@ static PyObject *covertreec_knn(PyObject *self, PyObject *args) {
         results[offset++] = data[j];
     }
   });
-  //std::pair<CoverTree::Node*, double> cnn = obj->NearestNeighbour(value);
 
-  // std::cout << cnn.first->_p << std::endl;
-  //Py_RETURN_NONE;
-
-  long dims[3] = {numPoints, k, numDims};
-  PyObject *out_array = PyArray_SimpleNewFromData(3, dims, MY_NPY_FLOAT, results);
-
-  Py_INCREF(out_array);
   return out_array;
 }
 
@@ -343,6 +331,81 @@ static PyObject *covertreec_test_covering(PyObject *self, PyObject *args) {
   Py_RETURN_FALSE;
 }
 
+
+/******************************************* Clustering API ***************************************************/
+
+static PyObject *covertreec_get_level_stats(PyObject *self, PyObject *args) {
+  CoverTree *obj;
+  size_t int_ptr;
+
+  if (!PyArg_ParseTuple(args, "k:covertreec_get_level_stats", &int_ptr))
+    return NULL;
+
+  obj = reinterpret_cast<CoverTree*>(int_ptr);
+
+  PyObject* dict = PyDict_New();
+  PyDict_SetItemString(dict, "min_level", PyLong_FromLong(obj->getMinLevel()));
+  PyDict_SetItemString(dict, "max_level", PyLong_FromLong(obj->getMaxLevel()));
+  PyDict_SetItemString(dict, "num_points", PyLong_FromLong(obj->count_points()));
+
+  // Add level counts
+  std::map<int, unsigned> level_counts = obj->getLevelCounts();
+  PyObject* counts_dict = PyDict_New();
+  for (const auto& pair : level_counts) {
+    PyDict_SetItem(counts_dict, PyLong_FromLong(pair.first), PyLong_FromLong(pair.second));
+  }
+  PyDict_SetItemString(dict, "level_counts", counts_dict);
+
+  return dict;
+}
+
+static PyObject *covertreec_get_clusters_at_level(PyObject *self, PyObject *args) {
+  CoverTree *obj;
+  size_t int_ptr;
+  int level;
+
+  if (!PyArg_ParseTuple(args, "ki:covertreec_get_clusters_at_level", &int_ptr, &level))
+    return NULL;
+
+  obj = reinterpret_cast<CoverTree*>(int_ptr);
+
+  std::vector<CoverTree::ClusterInfo> clusters = obj->getClustersAtLevel(level);
+
+  // Build Python list of cluster dictionaries
+  PyObject* result_list = PyList_New(clusters.size());
+
+  for (size_t i = 0; i < clusters.size(); ++i) {
+    const auto& cluster = clusters[i];
+    PyObject* cluster_dict = PyDict_New();
+
+    // Add cluster properties
+    PyDict_SetItemString(cluster_dict, "node_id", PyLong_FromLong(cluster.node_id));
+    PyDict_SetItemString(cluster_dict, "level", PyLong_FromLong(cluster.level));
+    PyDict_SetItemString(cluster_dict, "covering_distance", PyFloat_FromDouble(cluster.covering_distance));
+    PyDict_SetItemString(cluster_dict, "distance_to_parent", PyFloat_FromDouble(cluster.distance_to_parent));
+
+    // Convert center point to numpy array
+    npy_intp center_dims[1] = {static_cast<npy_intp>(cluster.center.size())};
+    PyObject* center_array = PyArray_SimpleNew(1, center_dims, NPY_FLOAT64);
+    double* center_data = static_cast<double*>(PyArray_DATA((PyArrayObject*)center_array));
+    for (int j = 0; j < cluster.center.size(); ++j) {
+      center_data[j] = cluster.center[j];
+    }
+    PyDict_SetItemString(cluster_dict, "center", center_array);
+
+    // Convert point IDs to list
+    PyObject* ids_list = PyList_New(cluster.point_ids.size());
+    for (size_t j = 0; j < cluster.point_ids.size(); ++j) {
+      PyList_SetItem(ids_list, j, PyLong_FromLong(cluster.point_ids[j]));
+    }
+    PyDict_SetItemString(cluster_dict, "point_ids", ids_list);
+
+    PyList_SetItem(result_list, i, cluster_dict);
+  }
+
+  return result_list;
+}
+
 PyMODINIT_FUNC PyInit_covertreec(void)
 {
   PyObject *m;
@@ -356,6 +419,8 @@ PyMODINIT_FUNC PyInit_covertreec(void)
     {"display", covertreec_display, METH_VARARGS, "Display the Cover Tree."},
     {"dumps", covertreec_dumps, METH_VARARGS, "Dump the Cover Tree into a Python string."},
     {"test_covering", covertreec_test_covering, METH_VARARGS, "Check if covering property is satisfied."},
+    {"get_level_stats", covertreec_get_level_stats, METH_VARARGS, "Get tree level statistics."},
+    {"get_clusters_at_level", covertreec_get_clusters_at_level, METH_VARARGS, "Get clusters at a specific level."},
     {NULL, NULL, 0, NULL}
   };
   static struct PyModuleDef mdef = {PyModuleDef_HEAD_INIT,

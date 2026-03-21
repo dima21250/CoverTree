@@ -255,7 +255,34 @@ public:
     std::vector<pointType> get_points();
 
     /*** Count the points in the tree ***/
-    unsigned count_points();
+    unsigned count_points() const;
+
+    /*** Clustering API - NEW ***/
+    // Get min/max levels in tree
+    int getMinLevel() const { return min_scale.load(); }
+    int getMaxLevel() const { return max_scale.load(); }
+
+    // Get number of nodes at each level
+    std::map<int, unsigned> getLevelCounts() const;
+
+    // Get all nodes at a specific level
+    std::vector<Node*> getNodesAtLevel(int level) const;
+
+    // Get all point IDs in a node's subtree
+    std::vector<unsigned> getSubtreePointIDs(Node* node) const;
+
+    // Cluster information structure
+    struct ClusterInfo {
+        unsigned node_id;
+        int level;
+        pointType center;
+        std::vector<unsigned> point_ids;
+        double covering_distance;
+        double distance_to_parent;
+    };
+
+    // Get clusters at a specific level
+    std::vector<ClusterInfo> getClustersAtLevel(int level) const;
 
     /*** Pretty print ***/
     friend std::ostream& operator<<(std::ostream& os, const CoverTree& ct);

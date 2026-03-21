@@ -1146,7 +1146,7 @@ std::vector<pointType> CoverTree::get_points()
 
 /******************************************* Functions to remove ***************************************************/
 
-unsigned CoverTree::count_points()
+unsigned CoverTree::count_points() const
 {
     std::stack<CoverTree::Node*> travel;
     CoverTree::Node* current;
@@ -1170,5 +1170,114 @@ unsigned CoverTree::count_points()
             travel.push(child);
     }
     return result;
+}
+
+/******************************************* Clustering API ***************************************************/
+
+std::map<int, unsigned> CoverTree::getLevelCounts() const
+{
+    std::map<int, unsigned> counts;
+    std::stack<CoverTree::Node*> travel;
+
+    if (!root)
+        return counts;
+
+    travel.push(root);
+
+    while (!travel.empty())
+    {
+        CoverTree::Node* current = travel.top();
+        travel.pop();
+
+        counts[current->level]++;
+
+        for (const auto& child : *current)
+            travel.push(child);
+    }
+
+    return counts;
+}
+
+std::vector<CoverTree::Node*> CoverTree::getNodesAtLevel(int level) const
+{
+    std::vector<CoverTree::Node*> nodes;
+    std::stack<CoverTree::Node*> travel;
+
+    if (!root)
+        return nodes;
+
+    travel.push(root);
+
+    while (!travel.empty())
+    {
+        CoverTree::Node* current = travel.top();
+        travel.pop();
+
+        if (current->level == level)
+        {
+            nodes.push_back(current);
+        }
+
+        // Only traverse children if we haven't reached target level yet
+        if (current->level >= level)
+        {
+            for (const auto& child : *current)
+                travel.push(child);
+        }
+    }
+
+    return nodes;
+}
+
+std::vector<unsigned> CoverTree::getSubtreePointIDs(CoverTree::Node* node) const
+{
+    std::vector<unsigned> point_ids;
+    std::stack<CoverTree::Node*> travel;
+
+    if (!node)
+        return point_ids;
+
+    travel.push(node);
+
+    while (!travel.empty())
+    {
+        CoverTree::Node* current = travel.top();
+        travel.pop();
+
+        point_ids.push_back(current->ID);
+
+        for (const auto& child : *current)
+            travel.push(child);
+    }
+
+    return point_ids;
+}
+
+std::vector<CoverTree::ClusterInfo> CoverTree::getClustersAtLevel(int level) const
+{
+    std::vector<CoverTree::ClusterInfo> clusters;
+
+    // Get all nodes at the specified level
+    std::vector<CoverTree::Node*> nodes = getNodesAtLevel(level);
+
+    for (CoverTree::Node* node : nodes)
+    {
+        ClusterInfo cluster;
+        cluster.node_id = node->ID;
+        cluster.level = node->level;
+        cluster.center = node->_p;
+        cluster.point_ids = getSubtreePointIDs(node);
+        cluster.covering_distance = node->covdist();
+
+        // Calculate distance to parent (0 if root)
+        if (node->parent)
+            cluster.distance_to_parent = node->dist(node->parent);
+        else
+            cluster.distance_to_parent = 0.0;
+
+        clusters.push_back(cluster);
+    }
+
+    return clusters;
 }
 

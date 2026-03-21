@@ -918,63 +918,39 @@ CoverTree::~CoverTree()
 /****************************** Public API for creation of Cover Trees *************************************/
 
 // constructor: using point list
+// Note: use_multi_core parameter is kept for API compatibility but ignored.
+// The constructor internally uses parallel operations when beneficial.
 CoverTree* CoverTree::from_points(std::vector<pointType>& pList, int truncate /*=-1*/, bool use_multi_core /*=true*/)
 {
-    CoverTree* cTree = NULL;
-    if (use_multi_core)
-    {
-	// FIXME Same as in 'else' part; makes no sense
-        cTree = new CoverTree(pList, 0, pList.size(), truncate);
-    }
-    else
-    {
-        cTree = new CoverTree(pList, 0, pList.size(), truncate);
-    }
-
+    (void)use_multi_core; // Unused - parallelism is built into constructor
+    CoverTree* cTree = new CoverTree(pList, 0, pList.size(), truncate);
     cTree->calc_maxdist();
-
     return cTree;
 }
 
 // constructor: using matrix in row-major form!
+// Note: use_multi_core parameter is kept for API compatibility but ignored.
+// The constructor internally uses parallel operations when beneficial.
 CoverTree* CoverTree::from_matrix(Eigen::MatrixXd& pMatrix, int truncate /*=-1*/, bool use_multi_core /*=true*/)
 {
+    (void)use_multi_core; // Unused - parallelism is built into constructor
     std::cout << "Faster Cover Tree with base " << CoverTree::base << std::endl;
-    CoverTree* cTree = NULL;
-    if (use_multi_core)
-    {
-	// FIXME Same as in 'else' part; makes no sense
-        cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
-    }
-    else
-    {
-        cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
-    }
-
+    CoverTree* cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
     //cTree->calc_maxdist();
     cTree->print_levels();
-
     return cTree;
 }
 
 // constructor: using matrix in col-major form!
+// Note: use_multi_core parameter is kept for API compatibility but ignored.
+// The constructor internally uses parallel operations when beneficial.
 CoverTree* CoverTree::from_matrix(Eigen::Map<Eigen::MatrixXd>& pMatrix, int truncate /*=-1*/, bool use_multi_core /*=true*/)
 {
+    (void)use_multi_core; // Unused - parallelism is built into constructor
     std::cout << "Faster Cover Tree with base " << CoverTree::base << std::endl;
-    CoverTree* cTree = NULL;
-    if (use_multi_core)
-    {
-	// FIXME Same as in 'else' part; makes no sense
-        cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
-    }
-    else
-    {
-        cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
-    }
-
+    CoverTree* cTree = new CoverTree(pMatrix, 0, pMatrix.cols(), truncate);
     //cTree->calc_maxdist();
     cTree->print_levels();
-
     return cTree;
 }
 
