@@ -206,6 +206,19 @@ endif()
 #-----------------------------------------------------------------------------
 # Generate Python config for GPU option
 #-----------------------------------------------------------------------------
+# Convert CMake booleans to Python booleans
+if(USE_GPU)
+    set(PYTHON_USE_GPU "True")
+else()
+    set(PYTHON_USE_GPU "False")
+endif()
+
+if(USE_OPENAI_EMBEDDINGS)
+    set(PYTHON_USE_OPENAI_EMBEDDINGS "True")
+else()
+    set(PYTHON_USE_OPENAI_EMBEDDINGS "False")
+endif()
+
 set(CONFIG_FILE_IN "${CMAKE_CURRENT_SOURCE_DIR}/covertree_config.py.in")
 set(CONFIG_FILE_OUT "${CMAKE_CURRENT_BINARY_DIR}/covertree_config.py")
 configure_file(${CONFIG_FILE_IN} ${CONFIG_FILE_OUT} @ONLY)
