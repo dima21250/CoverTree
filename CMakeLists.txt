@@ -64,6 +64,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
 endif()
 
 #-----------------------------------------------------------------------------
+# Options
+#-----------------------------------------------------------------------------
+option(USE_GPU "Use GPU for FAISS acceleration (affects sample_events.py)" OFF)
+option(USE_OPENAI_EMBEDDINGS "Enable OpenAI embedding support in sample_events.py" OFF)
+
+#-----------------------------------------------------------------------------
 # Find dependencies
 #-----------------------------------------------------------------------------
 
@@ -198,6 +204,23 @@ if(BUILD_TESTS)
 endif()
 
 #-----------------------------------------------------------------------------
+# Generate Python config for GPU option
+#-----------------------------------------------------------------------------
+set(CONFIG_FILE_IN "${CMAKE_CURRENT_SOURCE_DIR}/covertree_config.py.in")
+set(CONFIG_FILE_OUT "${CMAKE_CURRENT_BINARY_DIR}/covertree_config.py")
+configure_file(${CONFIG_FILE_IN} ${CONFIG_FILE_OUT} @ONLY)
+
+# Copy the config file to the source directory so that sample_events.py can import it
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/covertree_config.py
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CONFIG_FILE_OUT}
+            ${CMAKE_CURRENT_SOURCE_DIR}/covertree_config.py
+    DEPENDS ${CONFIG_FILE_OUT}
+    COMMENT "Copying covertree_config.py to source directory"
+)
+
+#-----------------------------------------------------------------------------
 # Print configuration summary
 #-----------------------------------------------------------------------------
 message(STATUS "")
@@ -210,6 +233,7 @@ message(STATUS "C++ Standard:      ${CMAKE_CXX_STANDARD}")
 message(STATUS "C++ Compiler:      ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Install prefix:    ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Eigen include:     ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "Use GPU:           ${USE_GPU}")
 if(APPLE)
 message(STATUS "macOS arch:        ${MACOS_ARCH}")
 endif()

@@ -1060,7 +1060,7 @@ std::vector<pointType> CoverTree::get_points()
 
 /******************************************* Functions to remove ***************************************************/
 
-unsigned CoverTree::count_points()
+unsigned CoverTree::count_points() const
 {
     std::stack<CoverTree::Node*> travel;
     CoverTree::Node* current;
