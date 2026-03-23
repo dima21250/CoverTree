@@ -61,6 +61,12 @@ CoverTree supports **two build systems**:
 # Build everything (C++ + Python)
 ./build.sh --python
 
+# Build with OpenAI embeddings support
+./build.sh --python -DUSE_OPENAI_EMBEDDINGS=ON
+
+# Build with GPU support for FAISS
+./build.sh --python -DUSE_GPU=ON -DUSE_OPENAI_EMBEDDINGS=ON
+
 # Clean build
 ./build.sh --clean --python
 
@@ -79,7 +85,12 @@ cmake --build . -j$(sysctl -n hw.ncpu)
 - IDE integration (VS Code, CLion, Xcode)
 - Professional build infrastructure
 
+**CMake Options:**
+- `USE_OPENAI_EMBEDDINGS=ON` - Enable OpenAI embedding API integration
+- `USE_GPU=ON` - Enable GPU acceleration for FAISS
+
 See [CMAKE_BUILD.md](CMAKE_BUILD.md) for detailed guide.
+See [OPENAI_EMBEDDINGS.md](OPENAI_EMBEDDINGS.md) for OpenAI integration guide.
 
 ### Option 2: Makefile (Traditional)
 
@@ -155,6 +166,66 @@ ct.remove(existing_point)
 # Verify tree properties
 ct.test_covering()
 ```
+
+## OpenAI Embeddings Support
+
+CoverTree now supports direct integration with OpenAI's embedding API for semantic search and hierarchical text clustering.
+
+### Quick Start
+
+```bash
+# Install additional dependencies
+uv pip install openai tenacity faiss-cpu
+
+# Build with OpenAI support
+./build.sh --clean --python -DUSE_OPENAI_EMBEDDINGS=ON
+
+# Set API key
+export OPENAI_API_KEY="sk-..."
+
+# Run sample with OpenAI embeddings
+python sample_events.py
+```
+
+### Usage Example
+
+```python
+import os
+from covertree import CoverTree
+from sample_events import get_openai_embeddings
+
+# Your text data
+texts = [
+    "Machine learning is fascinating.",
+    "Python is great for AI development.",
+    "Natural language processing is powerful."
+]
+
+# Get embeddings from OpenAI
+api_key = os.getenv("OPENAI_API_KEY")
+embeddings = get_openai_embeddings(
+    texts,
+    api_key=api_key,
+    endpoint="https://api.openai.com/v1/embeddings",
+    model="text-embedding-3-small"
+)
+
+# Build CoverTree for semantic search
+ct = CoverTree.from_matrix(embeddings)
+
+# Query for similar texts
+query_embedding = get_openai_embeddings(["AI and machine learning"], api_key, ...)
+results = ct.kNearestNeighbours(query_embedding[0], k=3)
+```
+
+**For complete documentation, see [OPENAI_EMBEDDINGS.md](OPENAI_EMBEDDINGS.md)**
+
+Features:
+- Automatic retry with exponential backoff
+- Batch processing for large document collections
+- GPU acceleration support via FAISS
+- Hierarchical clustering of text embeddings
+- Compatible with OpenAI and OpenAI-compatible APIs
 
 ## Architecture
 
@@ -235,15 +306,38 @@ dist/cover_tree data/train_100d_1000k_1000.dat data/test_100d_1000k_10.dat
   - numpy >= 1.13.1
   - scipy >= 0.17
   - scikit-learn >= 0.18.1
+- **Optional packages** (for OpenAI embeddings):
+  - openai - OpenAI API client
+  - tenacity - Retry logic with exponential backoff
+  - faiss-cpu or faiss-gpu - For performance comparison
+  - torch - Required for GPU support
 
 ## Testing
 
 Run Python tests:
 ```bash
 python test.py                    # Main test suite
-python test_ensemble.py           # Ensemble tests
-python test_text_input.py         # Text input tests
-python test_slice_n_dice_2.py     # Slicing tests
+python test_pybind11.py           # Modern pybind11 API tests
+python test_clustering.py         # Clustering API tests
+python test_modern.py             # Modern Python interface tests
+python test_sanity.py             # Core functionality tests
+
+# Tests requiring configuration files
+python test_ensemble.py <config.json>      # Ensemble tests
+python test_text_input.py <args>           # Text input tests
+python test_slice_n_dice_2.py <args>       # Slicing tests
+```
+
+**Testing with OpenAI Embeddings:**
+```bash
+# Set your API key
+export OPENAI_API_KEY="sk-..."
+
+# Run sample with OpenAI embeddings
+python sample_events.py
+
+# The sample will use OpenAI API if USE_OPENAI_EMBEDDINGS=ON was set during build
+# Otherwise it falls back to synthetic data
 ```
 
 ## Performance Notes
